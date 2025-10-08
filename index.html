@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalized Weekly Meal Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a sleek look */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Custom scrollbar for a more modern feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .day-card, .modal-card {
+            /* Glassmorphism effect */
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .day-card {
+             transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        /* Modal styles */
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-500">
+
+    <div class="min-h-screen flex flex-col items-center p-4 lg:p-8">
+        
+        <!-- Header -->
+        <header class="w-full max-w-[100rem] flex justify-between items-center mb-12">
+            <div class="text-left">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">Weekly Meal Planner</h1>
+                <p id="subtitle" class="text-lg text-gray-600 dark:text-gray-400 mt-2">Your personalized meal plan</p>
+            </div>
+            <button id="profile-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-lg flex items-center space-x-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Profile</span>
+            </button>
+        </header>
+
+        <!-- Weekly Meal Display -->
+        <div id="weekly-plan-container" class="w-full max-w-[100rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6">
+            <!-- Meal cards will be generated here -->
+        </div>
+        <div id="placeholder" class="w-full max-w-7xl text-center py-10 px-6 rounded-2xl day-card">
+            <p id="placeholder-text" class="text-gray-500 dark:text-gray-400">Create a profile and generate your first weekly meal plan!</p>
+        </div>
+
+        <!-- Week Totals -->
+        <div id="week-totals-card" class="w-full max-w-[100rem] mt-8 hidden">
+          <div class="rounded-2xl shadow-lg overflow-hidden day-card p-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Week Totals</h2>
+            <div id="week-totals" class="text-sm text-gray-700 dark:text-gray-300">—</div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="mt-12">
+            <button id="generate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 flex items-center justify-center space-x-2 w-72">
+                <svg id="button-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M5 5a7 7 0 0012.248 4.752M19 20v-5h-5M20 20a7 7 0 00-12.248-4.752"></path></svg>
+                <span id="button-text">Generate Full Week Plan</span>
+                <div id="button-loader" class="loader w-6 h-6 rounded-full border-4 border-t-4 border-gray-200 hidden"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="recipe-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden opacity-0" onclick="closeModal('recipe-modal')">
+        <div class="modal-content modal-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-95" onclick="event.stopPropagation()"></div>
+    </div>
+    <div id="profile-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden opacity-0" onclick="closeModal('profile-modal')">
+        <div class="modal-content modal-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform scale-95" onclick="event.stopPropagation()">
+            <div class="p-8">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Profile</h2>
+                <form id="profile-form">
+                    <div class="mb-4">
+                        <label for="goal" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary Fitness Goal</label>
+                        <select id="goal" name="goal" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="maintaining">Maintaining Weight</option>
+                            <option value="cutting">Cutting (Weight Loss)</option>
+                            <option value="bulking">Bulking (Weight Gain)</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-4 mt-8">
+                        <button type="button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500" onclick="closeModal('profile-modal')">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">Save Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== utils.js (BLOCK) ===== -->
+    <script>
+    const Utils = (() => {
+      const FRACTIONS = { '½':0.5,'⅓':1/3,'⅔':2/3,'¼':0.25,'¾':0.75,'⅛':0.125,'⅜':0.375,'⅝':0.625,'⅞':0.875 };
+      function toNumberLoose(str){
+        if(!str) return 0;
+        let s = String(str).trim().replace(/[½⅓⅔¼¾⅛⅜⅝⅞]/g, ch => ' '+FRACTIONS[ch]);
+        const range = s.match(/(\d+(?:\.\d+)?)[\s]*[-–][\s]*(\d+(?:\.\d+)?)/);
+        if(range){ return (parseFloat(range[1])+parseFloat(range[2]))/2; }
+        const parts = s.split(/\s+/).map(x=>parseFloat(x)).filter(n=>!Number.isNaN(n));
+        return parts.length? parts.reduce((a,b)=>a+b,0): 0;
+      }
+      function round2(n){ return Math.round(n*100)/100; }
+      function round0(n){ return Math.round(n); }
+      function normalizeKey(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+      return { toNumberLoose, round2, round0, normalizeKey };
+    })();
+    </script>
+
+    <!-- ===== foods.core.js (BLOCK) ===== -->
+    <script>
+    const FoodsCore = {
+      'chicken breast, raw': { kcal:120, protein:22.5, carbs:0,   fat:2.6 },
+      'white rice, cooked':  { kcal:130, protein:2.4,  carbs:28.2, fat:0.3 },
+      'olive oil':           { kcal:884, protein:0,    carbs:0,    fat:100 },
+      'broccoli, raw':       { kcal:34,  protein:2.8,  carbs:6.6,  fat:0.4 },
+      'salmon, raw':         { kcal:208, protein:20,   carbs:0,    fat:13 },
+      'egg, whole':          { kcal:155, protein:13,   carbs:1.1,  fat:11 },
+      'oats, dry':           { kcal:379, protein:13.2, carbs:67.7, fat:6.5 },
+      'banana':              { kcal:89,  protein:1.1,  carbs:23,   fat:0.3 },
+      'peanut butter':       { kcal:588, protein:25,   carbs:20,   fat:50 },
+      'greek yogurt':        { kcal:97,  protein:9,    carbs:3.6,  fat:5 }
+    };
+    function getFoodPer100g(key){
+      const k = Utils.normalizeKey(key);
+      if(FoodsCore[k]) return FoodsCore[k];
+      if(k.includes('chicken')) return FoodsCore['chicken breast, raw'];
+      if(k.includes('salmon'))  return FoodsCore['salmon, raw'];
+      if(k.includes('broccoli'))return FoodsCore['broccoli, raw'];
+      if(k.includes('rice'))    return FoodsCore['white rice, cooked'];
+      if(k.includes('yogurt'))  return FoodsCore['greek yogurt'];
+      return null;
+    }
+    </script>
+
+    <!-- ===== portion-maps.js (BLOCK) ===== -->
+    <script>
+    const UnitToGram = {
+      'g':1,'gram':1,'grams':1,'kg':1000,
+      'tsp':4.2,'tbsp':13.8,'tablespoon':13.8,'cup':240,
+      'ml':1,'l':1000,'oz':28.35,'ounce':28.35,'lb':453.6
+    };
+    const DensityOverrides = {
+      'olive oil':{ tbsp:13.5, tsp:4.5, cup:216 },
+      'white rice, cooked':{ cup:185 },
+      'oats, dry':{ cup:90 },
+      'peanut butter':{ tbsp:16 },
+      'banana':{ unit:118 },
+      'egg, whole':{ unit:50 },
+      'greek yogurt':{ cup:245 }
+    };
+    function toGrams(qty, unit, normName){
+      const n = Utils.normalizeKey(normName);
+      const u = (unit||'').toLowerCase().trim();
+      if((u===''||u==='unit'||u==='piece') && DensityOverrides[n]?.unit){ return qty*DensityOverrides[n].unit; }
+      if(DensityOverrides[n] && DensityOverrides[n][u]!=null) return qty*DensityOverrides[n][u];
+      if(UnitToGram[u]!=null) return qty*UnitToGram[u];
+      return 0;
+    }
+    </script>
+
+    <!-- ===== nutritionEngine.js (BLOCK) ===== -->
+    <script>
+    const NutritionEngine = (()=>{
+      function normalizeIngredientName(name){
+        let n = String(name||'').toLowerCase().trim();
+        n = n.replace(/\bskinless\b|\bbone[- ]?less\b/g,'').replace(/\s+/g,' ').trim();
+        if(n.includes('chicken breast')) return 'chicken breast, raw';
+        if(n.includes('yogurt')) return 'greek yogurt';
+        return n;
+      }
+      function parseMeasure(measureStr, ingredientName){
+        if(!measureStr) return { qty:0, unit:'g', grams:0, approx:false };
+        const raw = measureStr.trim().toLowerCase();
+        const qty = Utils.toNumberLoose(raw);
+        const unitMatch = raw.match(/\b(g|gram|grams|kg|tsp|tbsp|tablespoon|cup|ml|l|oz|ounce|lb|egg|eggs|banana|piece|unit)\b/);
+        let unit = unitMatch? unitMatch[1]: '';
+        if(unit==='egg' or unit==='eggs' or raw.includes('egg')) unit='unit';
+        if(raw.includes('banana')) unit='unit';
+        const norm = normalizeIngredientName(ingredientName);
+        const grams = toGrams(qty, unit, norm);
+        const approx = grams===0;
+        return { qty, unit: unit||'g', grams, approx };
+      }
+      function macrosFor(ingredientName, grams){
+        const per100 = getFoodPer100g(ingredientName);
+        if(!per100||grams<=0) return { kcal:0, protein:0, carbs:0, fat:0, unknown:!per100 };
+        const f = grams/100;
+        return { kcal:per100.kcal*f, protein:per100.protein*f, carbs:per100.carbs*f, fat:per100.fat*f, unknown:false };
+      }
+      function computeMealMacrosFromApiMeal(meal){
+        const ingredients = [];
+        for(let i=1;i<=20;i++){
+          const ing = meal['strIngredient'+i];
+          const meas = meal['strMeasure'+i];
+          if(ing && ing.trim()){
+            ingredients.push({ name: ing, measure: meas||'' });
+          }else{ break; }
+        }
+        const rows=[];
+        let totals={kcal:0,protein:0,carbs:0,fat:0};
+        let flags={unknowns:0,approx:0};
+        for(const ing of ingredients){
+          const norm = ing.name;
+          const pm = parseMeasure(ing.measure, norm);
+          const m = macrosFor(norm, pm.grams);
+          if(m.unknown) flags.unknowns++;
+          if(pm.approx) flags.approx++;
+          totals.kcal+=m.kcal; totals.protein+=m.protein; totals.carbs+=m.carbs; totals.fat+=m.fat;
+          rows.push({
+            ingredient: ing.name, measure: ing.measure, grams: Utils.round2(pm.grams),
+            kcal: Utils.round2(m.kcal), protein: Utils.round2(m.protein), carbs: Utils.round2(m.carbs), fat: Utils.round2(m.fat),
+            unknown:m.unknown, approx:pm.approx
+          });
+        }
+        totals={ kcal:Utils.round0(totals.kcal), protein:Utils.round2(totals.protein), carbs:Utils.round2(totals.carbs), fat:Utils.round2(totals.fat) };
+        return { totals, rows, flags };
+      }
+      function sumTotals(list){
+        return list.reduce((a,b)=>({kcal:a.kcal+b.kcal, protein:a.protein+b.protein, carbs:a.carbs+b.carbs, fat:a.fat+b.fat}), {kcal:0,protein:0,carbs:0,fat:0});
+      }
+      return { computeMealMacrosFromApiMeal, sumTotals };
+    })();
+    </script>
+
+    <!-- ===== ui.js (BLOCK) ===== -->
+    <script>
+    function badgesHTML(t){ 
+      return `<div class="text-xs text-gray-700 dark:text-gray-300 mt-1 flex flex-wrap gap-2">
+        <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">P ${t.protein} g</span>
+        <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">C ${t.carbs} g</span>
+        <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">F ${t.fat} g</span>
+        <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">${t.kcal} kcal</span>
+      </div>`;
+    }
+    function mealTableHTML(rows){
+      return `<div class="mt-4">
+        <h4 class="font-semibold mb-2">Nutrition breakdown</h4>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left border-b border-gray-300 dark:border-gray-700">
+                <th class="py-2 pr-3">Ingredient</th>
+                <th class="py-2 pr-3">Measure</th>
+                <th class="py-2 pr-3">g</th>
+                <th class="py-2 pr-3">P</th>
+                <th class="py-2 pr-3">C</th>
+                <th class="py-2 pr-3">F</th>
+                <th class="py-2">Kcal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(r=>`<tr class="border-b border-gray-200/70 dark:border-gray-700/50">
+                <td class="py-1 pr-3">${r.ingredient}${r.unknown?' *':''}</td>
+                <td class="py-1 pr-3">${r.measure||'—'}</td>
+                <td class="py-1 pr-3">${r.grams}</td>
+                <td class="py-1 pr-3">${r.protein}</td>
+                <td class="py-1 pr-3">${r.carbs}</td>
+                <td class="py-1 pr-3">${r.fat}</td>
+                <td class="py-1">${r.kcal}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    }
+    </script>
+
+    <script>
+        // DOM Elements
+        const generateBtn = document.getElementById('generate-btn');
+        const weeklyPlanContainer = document.getElementById('weekly-plan-container');
+        const placeholder = document.getElementById('placeholder');
+        const placeholderText = document.getElementById('placeholder-text');
+        const subtitle = document.getElementById('subtitle');
+        const profileBtn = document.getElementById('profile-btn');
+
+        // Modals
+        const recipeModal = document.getElementById('recipe-modal');
+        const profileModal = document.getElementById('profile-modal');
+        const profileForm = document.getElementById('profile-form');
+        const goalSelect = document.getElementById('goal');
+
+        // Button elements
+        const buttonText = document.getElementById('button-text');
+        const buttonIcon = document.getElementById('button-icon');
+        const buttonLoader = document.getElementById('button-loader');
+        
+        // State
+        let weeklyMeals = [];
+        let userProfile = { goal: 'maintaining' };
+
+        // API and Constants
+        const API_BASE_URL = 'https://www.themealdb.com/api/json/v1/1/';
+        const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const GOAL_CATEGORIES = {
+            cutting: ['Chicken', 'Seafood', 'Vegetarian', 'Vegan', 'Breakfast'],
+            maintaining: ['Beef', 'Chicken', 'Dessert', 'Lamb', 'Miscellaneous', 'Pasta', 'Pork', 'Seafood', 'Side', 'Starter', 'Vegetarian', 'Breakfast', 'Goat'],
+            bulking: ['Beef', 'Pasta', 'Pork', 'Dessert', 'Lamb', 'Chicken']
+        };
+
+        // --- Core Functions ---
+
+        const getMealForGoal = async (goal) => {
+            try {
+                const categories = GOAL_CATEGORIES[goal] || GOAL_CATEGORIES['maintaining'];
+                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+                
+                const response = await fetch(`${API_BASE_URL}filter.php?c=${randomCategory}`);
+                const data = await response.json();
+                
+                const randomMealFromCategory = data.meals[Math.floor(Math.random() * data.meals.length)];
+                const mealDetailsResponse = await fetch(`${API_BASE_URL}lookup.php?i=${randomMealFromCategory.idMeal}`);
+                const mealDetailsData = await mealDetailsResponse.json();
+                
+                return mealDetailsData.meals[0];
+            } catch (error) {
+                console.error(`Error fetching meal for goal ${goal}:`, error);
+                // Fallback to a completely random meal if category filtering fails
+                const randomResponse = await fetch(`${API_BASE_URL}random.php`);
+                const randomData = await randomResponse.json();
+                return randomData.meals[0];
+            }
+        };
+
+        const getWeeklyMeals = async () => {
+            setLoading(true);
+            placeholder.classList.add('hidden');
+            weeklyPlanContainer.innerHTML = ''; 
+
+            try {
+                const mealPromises = Array.from({ length: 21 }, () => getMealForGoal(userProfile.goal));
+                weeklyMeals = await Promise.all(mealPromises);
+                displayWeeklyPlan(weeklyMeals);
+            } catch (error) {
+                console.error("Failed to fetch weekly meals:", error);
+                displayError();
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const displayWeeklyPlan = (meals) => {
+            if (meals.length < 21) {
+                displayError("Not enough meals were generated. Please try again.");
+                return;
+            }
+            document.getElementById('week-totals-card').classList.add('hidden');
+            document.getElementById('week-totals').textContent = '—';
+
+            let weekTotals = { kcal:0, protein:0, carbs:0, fat:0 };
+
+            for (let i = 0; i < 7; i++) {
+                const day = DAYS_OF_WEEK[i];
+                const dayCard = document.createElement('div');
+                dayCard.className = 'rounded-2xl shadow-lg overflow-hidden day-card flex flex-col';
+                
+                const breakfast = meals[i * 3];
+                const lunch = meals[i * 3 + 1];
+                const dinner = meals[i * 3 + 2];
+
+                const bComp = NutritionEngine.computeMealMacrosFromApiMeal(breakfast);
+                const lComp = NutritionEngine.computeMealMacrosFromApiMeal(lunch);
+                const dComp = NutritionEngine.computeMealMacrosFromApiMeal(dinner);
+
+                const dayTotals = NutritionEngine.sumTotals([bComp.totals, lComp.totals, dComp.totals]);
+                weekTotals = NutritionEngine.sumTotals([weekTotals, dayTotals]);
+                
+                dayCard.innerHTML = `
+                    <div class="p-4 bg-gray-900/10 dark:bg-black/20">
+                        <h2 class="text-xl font-bold text-center text-gray-900 dark:text-white">${day}</h2>
+                        <div class="mt-2 text-center text-xs text-gray-700 dark:text-gray-300">${badgesHTML(dayTotals)}</div>
+                    </div>
+                    <div class="p-4 flex flex-col space-y-4 flex-grow">
+                        ${createMealSection('Breakfast', breakfast, i * 3, bComp)}
+                        ${createMealSection('Lunch', lunch, i * 3 + 1, lComp)}
+                        ${createMealSection('Dinner', dinner, i * 3 + 2, dComp)}
+                    </div>
+                `;
+                weeklyPlanContainer.appendChild(dayCard);
+            }
+
+            // Show week totals
+            const w = weekTotals;
+            const text = `P ${Utils.round2(w.protein)} g • C ${Utils.round2(w.carbs)} g • F ${Utils.round2(w.fat)} g • ${Utils.round0(w.kcal)} kcal`;
+            document.getElementById('week-totals').textContent = text;
+            document.getElementById('week-totals-card').classList.remove('hidden');
+        };
+
+        // --- UI & Helper Functions ---
+
+        const createMealSection = (title, meal, index, comp) => {
+            if (!meal) return '';
+            return `
+                <div class="border-t border-gray-300 dark:border-gray-600/50 pt-4">
+                    <p class="font-semibold text-gray-500 dark:text-gray-400 text-sm mb-2">${title}</p>
+                    <div class="flex items-center space-x-3">
+                        <img src="${meal.strMealThumb}/preview" alt="${meal.strMeal}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
+                        <div class="flex-grow min-w-0">
+                            <h4 class="text-md font-semibold truncate text-gray-800 dark:text-gray-200">${meal.strMeal}</h4>
+                            <button class="text-sm text-blue-500 hover:underline" data-meal-index="${index}">View Recipe</button>
+                            ${badgesHTML(comp.totals)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const displayError = (message = "Sorry, something went wrong. Please try again!") => {
+            placeholder.classList.remove('hidden');
+            weeklyPlanContainer.innerHTML = '';
+            placeholderText.innerHTML = `<p class="text-red-500">${message}</p>`;
+        }
+        
+        const openModal = (modalId) => {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        };
+
+        const closeModal = (modalId) => {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        const showRecipeModal = (mealIndex) => {
+            const meal = weeklyMeals[mealIndex];
+            if (!meal) return;
+
+            const comp = NutritionEngine.computeMealMacrosFromApiMeal(meal);
+
+            let ingredientsHTML = '';
+            for (let i = 1; i <= 20; i++) {
+                const ingredient = meal[`strIngredient${i}`];
+                const measure = meal[`strMeasure${i}`];
+                if (ingredient) {
+                    ingredientsHTML += `<li class="flex items-start"><span class="bg-gray-200 dark:bg-gray-700 rounded-full w-4 h-4 text-xs flex items-center justify-center mr-3 mt-1 flex-shrink-0">&check;</span>${measure} ${ingredient}</li>`;
+                } else {
+                    break;
+                }
+            }
+            
+            recipeModal.querySelector('.modal-content').innerHTML = `
+                <div class="relative p-6 md:p-8">
+                    <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl" onclick="closeModal('recipe-modal')">&times;</button>
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">${meal.strMeal}</h2>
+                    <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full font-medium">${meal.strCategory}</span>
+                        <span class="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 px-3 py-1 rounded-full font-medium">${meal.strArea}</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                           <h3 class="text-xl font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">Ingredients</h3>
+                           <ul class="space-y-2">${ingredientsHTML}</ul>
+                           ${mealTableHTML(comp.rows)}
+                           <div class="mt-3">${badgesHTML(comp.totals)}</div>
+                           <div class="text-xs text-gray-500 mt-1">${(comp.flags.unknowns>0)?'* some items approximated via fallback.':''}</div>
+                        </div>
+                        <div class="w-full aspect-w-16 aspect-h-9 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+                           <img src="${meal.strMealThumb}" alt="${meal.strMeal}" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-xl font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">Instructions</h3>
+                        <p class="whitespace-pre-wrap leading-relaxed">${meal.strInstructions}</p>
+                    </div>
+                    ${meal.strYoutube ? `
+                    <div class="mt-6 text-center">
+                        <a href="${meal.strYoutube}" target="_blank" rel="noopener noreferrer" class="inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                            Watch on YouTube
+                        </a>
+                    </div>` : ''}
+                </div>
+            `;
+            openModal('recipe-modal');
+        };
+
+        const setLoading = (isLoading) => {
+            generateBtn.disabled = isLoading;
+            buttonText.classList.toggle('hidden', isLoading);
+            buttonIcon.classList.toggle('hidden', isLoading);
+            buttonLoader.classList.toggle('hidden', !isLoading);
+        };
+
+        // --- Profile Management ---
+        const saveProfile = () => {
+            userProfile.goal = goalSelect.value;
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            updateUIForProfile();
+            closeModal('profile-modal');
+        };
+
+        const loadProfile = () => {
+            const savedProfile = localStorage.getItem('userProfile');
+            if (savedProfile) {
+                userProfile = JSON.parse(savedProfile);
+            }
+            goalSelect.value = userProfile.goal;
+            updateUIForProfile();
+        };
+
+        const updateUIForProfile = () => {
+            const goalText = userProfile.goal.charAt(0).toUpperCase() + userProfile.goal.slice(1);
+            subtitle.textContent = `Your personalized meal plan for: ${goalText}`;
+            placeholderText.textContent = `Click the button below to generate your weekly meal plan for ${goalText}!`;
+        };
+        
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', loadProfile);
+        
+        generateBtn.addEventListener('click', getWeeklyMeals);
+        
+        profileBtn.addEventListener('click', () => openModal('profile-modal'));
+        
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveProfile();
+        });
+
+        weeklyPlanContainer.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-meal-index]');
+            if (button) {
+                showRecipeModal(button.dataset.mealIndex);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") {
+                closeModal('recipe-modal');
+                closeModal('profile-modal');
+            }
+        });
+
+    </script>
+</body>
+</html>
