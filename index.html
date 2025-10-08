@@ -18,20 +18,10 @@
             -moz-osx-font-smoothing: grayscale;
         }
         /* Custom scrollbar for a more modern feel */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
         .day-card, .modal-card {
             /* Glassmorphism effect */
             background: rgba(255, 255, 255, 0.2);
@@ -39,29 +29,15 @@
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .day-card {
-             transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+        .day-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .day-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
         }
-        .loader {
-            border-top-color: #3498db;
-            animation: spin 1s ease-in-out infinite;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        /* Modal styles */
-        .modal {
-            transition: opacity 0.3s ease;
-        }
-        .modal-content {
-            transition: transform 0.3s ease;
-        }
+        .loader { border-top-color: #3498db; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .modal { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-500">
@@ -75,15 +51,13 @@
                 <p id="subtitle" class="text-lg text-gray-600 dark:text-gray-400 mt-2">Your personalized meal plan</p>
             </div>
             <button id="profile-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-lg flex items-center space-x-2">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <span>Profile</span>
             </button>
         </header>
 
         <!-- Weekly Meal Display -->
-        <div id="weekly-plan-container" class="w-full max-w-[100rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6">
-            <!-- Meal cards will be generated here -->
-        </div>
+        <div id="weekly-plan-container" class="w-full max-w-[100rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6"></div>
         <div id="placeholder" class="w-full max-w-7xl text-center py-10 px-6 rounded-2xl day-card">
             <p id="placeholder-text" class="text-gray-500 dark:text-gray-400">Create a profile and generate your first weekly meal plan!</p>
         </div>
@@ -99,7 +73,7 @@
         <!-- Action Button -->
         <div class="mt-12">
             <button id="generate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 flex items-center justify-center space-x-2 w-72">
-                <svg id="button-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M5 5a7 7 0 0012.248 4.752M19 20v-5h-5M20 20a7 7 0 00-12.248-4.752"></path></svg>
+                <svg id="button-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M5 5a7 7 0 0012.248 4.752M19 20v-5h-5M20 20a7 7 0 00-12.248-4.752"></path></svg>
                 <span id="button-text">Generate Full Week Plan</span>
                 <div id="button-loader" class="loader w-6 h-6 rounded-full border-4 border-t-4 border-gray-200 hidden"></div>
             </button>
@@ -219,7 +193,7 @@
         const qty = Utils.toNumberLoose(raw);
         const unitMatch = raw.match(/\b(g|gram|grams|kg|tsp|tbsp|tablespoon|cup|ml|l|oz|ounce|lb|egg|eggs|banana|piece|unit)\b/);
         let unit = unitMatch? unitMatch[1]: '';
-        if(unit==='egg' or unit==='eggs' or raw.includes('egg')) unit='unit';
+        if(unit==='egg' || unit==='eggs' || raw.includes('egg')) unit='unit';   /* FIXED: uses || */
         if(raw.includes('banana')) unit='unit';
         const norm = normalizeIngredientName(ingredientName);
         const grams = toGrams(qty, unit, norm);
@@ -241,21 +215,15 @@
             ingredients.push({ name: ing, measure: meas||'' });
           }else{ break; }
         }
-        const rows=[];
-        let totals={kcal:0,protein:0,carbs:0,fat:0};
-        let flags={unknowns:0,approx:0};
+        const rows=[]; let totals={kcal:0,protein:0,carbs:0,fat:0}; let flags={unknowns:0,approx:0};
         for(const ing of ingredients){
-          const norm = ing.name;
-          const pm = parseMeasure(ing.measure, norm);
-          const m = macrosFor(norm, pm.grams);
-          if(m.unknown) flags.unknowns++;
-          if(pm.approx) flags.approx++;
+          const pm = parseMeasure(ing.measure, ing.name);
+          const m = macrosFor(ing.name, pm.grams);
+          if(m.unknown) flags.unknowns++; if(pm.approx) flags.approx++;
           totals.kcal+=m.kcal; totals.protein+=m.protein; totals.carbs+=m.carbs; totals.fat+=m.fat;
-          rows.push({
-            ingredient: ing.name, measure: ing.measure, grams: Utils.round2(pm.grams),
+          rows.push({ ingredient: ing.name, measure: ing.measure, grams: Utils.round2(pm.grams),
             kcal: Utils.round2(m.kcal), protein: Utils.round2(m.protein), carbs: Utils.round2(m.carbs), fat: Utils.round2(m.fat),
-            unknown:m.unknown, approx:pm.approx
-          });
+            unknown:m.unknown, approx:pm.approx });
         }
         totals={ kcal:Utils.round0(totals.kcal), protein:Utils.round2(totals.protein), carbs:Utils.round2(totals.carbs), fat:Utils.round2(totals.fat) };
         return { totals, rows, flags };
@@ -353,6 +321,12 @@
                 const response = await fetch(`${API_BASE_URL}filter.php?c=${randomCategory}`);
                 const data = await response.json();
                 
+                // FIXED: guard when API returns { meals: null }
+                if(!data || !data.meals || !data.meals.length){
+                  const randomResponse = await fetch(`${API_BASE_URL}random.php`);
+                  const randomData = await randomResponse.json();
+                  return randomData.meals[0];
+                }
                 const randomMealFromCategory = data.meals[Math.floor(Math.random() * data.meals.length)];
                 const mealDetailsResponse = await fetch(`${API_BASE_URL}lookup.php?i=${randomMealFromCategory.idMeal}`);
                 const mealDetailsData = await mealDetailsResponse.json();
@@ -558,30 +532,16 @@
         
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', loadProfile);
-        
         generateBtn.addEventListener('click', getWeeklyMeals);
-        
         profileBtn.addEventListener('click', () => openModal('profile-modal'));
-        
-        profileForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            saveProfile();
-        });
-
+        profileForm.addEventListener('submit', (e) => { e.preventDefault(); saveProfile(); });
         weeklyPlanContainer.addEventListener('click', (e) => {
             const button = e.target.closest('button[data-meal-index]');
-            if (button) {
-                showRecipeModal(button.dataset.mealIndex);
-            }
+            if (button) showRecipeModal(button.dataset.mealIndex);
         });
-
         document.addEventListener('keydown', (e) => {
-            if (e.key === "Escape") {
-                closeModal('recipe-modal');
-                closeModal('profile-modal');
-            }
+            if (e.key === "Escape") { closeModal('recipe-modal'); closeModal('profile-modal'); }
         });
-
     </script>
 </body>
 </html>
