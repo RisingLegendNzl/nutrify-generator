@@ -1,618 +1,692 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Personalized Weekly Meal Planner</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Nutritional Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a sleek look */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-  <!-- Tailwind (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Inter font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-
-  <style>
-    body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-    .day-card, .modal-card {
-      background: rgba(255,255,255,0.12);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 16px;
-    }
-    .day-card { transition: transform .3s ease, box-shadow .3s ease; }
-    .day-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.12); }
-    .loader { border-top-color:#3b82f6; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg);} }
-    .modal { transition: opacity .25s ease; }
-    .modal-content { transition: transform .25s ease; }
-  </style>
+        .card-base {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .day-card {
+             transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Modal styles */
+        .modal { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+    </style>
 </head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-500">
 
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <div class="min-h-screen flex flex-col items-center p-4 lg:p-8">
+        
+        <!-- Header -->
+        <header class="w-full max-w-[100rem] flex justify-between items-center mb-8">
+            <div class="text-left">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">Advanced Planner</h1>
+                <p id="subtitle" class="text-lg text-gray-600 dark:text-gray-400 mt-2">Your data-driven meal plan</p>
+            </div>
+            <button id="profile-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-lg flex items-center space-x-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Profile</span>
+            </button>
+        </header>
+        
+        <!-- Weekly Summary -->
+        <div id="weekly-summary-container" class="w-full max-w-[100rem] mb-8 hidden">
+             <div class="card-base rounded-2xl p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white md:col-span-2">Plan Summary</h2>
+                    <div class="bg-gray-500/10 dark:bg-black/20 p-4 rounded-lg">
+                        <h3 class="font-bold text-center text-lg mb-2">Your Daily Targets</h3>
+                        <div id="daily-targets-summary" class="text-center text-sm"></div>
+                    </div>
+                    <div class="bg-gray-500/10 dark:bg-black/20 p-4 rounded-lg">
+                        <h3 class="font-bold text-center text-lg mb-2">Avg. Actual Daily Intake</h3>
+                        <div id="avg-actual-summary" class="text-center text-sm"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <div class="min-h-screen flex flex-col items-center p-4 lg:p-8">
+        <!-- Weekly Meal Display -->
+        <div id="weekly-plan-container" class="w-full max-w-[100rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6"></div>
+        <div id="placeholder" class="w-full max-w-7xl text-center py-10 px-6 rounded-2xl day-card card-base">
+            <p id="placeholder-text" class="text-gray-500 dark:text-gray-400">Loading user profile...</p>
+        </div>
 
-    <!-- Header -->
-    <header class="w-full max-w-[100rem] flex justify-between items-center mb-10">
-      <div>
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">Weekly Meal Planner</h1>
-        <p id="subtitle" class="text-lg text-gray-600 dark:text-gray-400 mt-2">Your personalized meal plan</p>
-      </div>
-      <button id="profile-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
-        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span>Profile</span>
-      </button>
-    </header>
-
-    <!-- Grid -->
-    <div id="weekly-plan-container" class="w-full max-w-[100rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6"></div>
-
-    <div id="placeholder" class="w-full max-w-[100rem] text-center py-10 px-6 day-card">
-      <p id="placeholder-text" class="text-gray-600 dark:text-gray-400">Create a profile and generate your first weekly meal plan!</p>
+        <!-- Action Button -->
+        <div class="mt-12">
+            <button id="generate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 flex items-center justify-center space-x-2 w-72" disabled>
+                <svg id="button-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M5 5a7 7 0 0012.248 4.752M19 20v-5h-5M20 20a7 7 0 00-12.248-4.752"></path></svg>
+                <span id="button-text">Generate Full Week Plan</span>
+                <div id="button-loader" class="loader w-6 h-6 rounded-full border-4 border-t-4 border-gray-200 hidden"></div>
+            </button>
+        </div>
     </div>
 
-    <!-- Week totals -->
-    <div id="week-totals-card" class="w-full max-w-[100rem] mt-8 hidden">
-      <div class="day-card p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Week Totals</h2>
-        <div id="week-totals" class="text-sm text-gray-700 dark:text-gray-300">—</div>
-      </div>
+    <!-- Modals -->
+    <div id="profile-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden opacity-0" onclick="closeModal('profile-modal')">
+        <div class="modal-content card-base bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform scale-95" onclick="event.stopPropagation()">
+            <div class="p-8">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Your Profile</h2>
+                <form id="profile-form" class="space-y-4">
+                    <!-- Personal Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="age" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Age</label>
+                            <input type="number" id="age" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md" required>
+                        </div>
+                        <div>
+                            <label for="sex" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sex</label>
+                            <select id="sex" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label for="height" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Height (cm)</label>
+                            <input type="number" id="height" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md" required>
+                        </div>
+                        <div>
+                            <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight (kg)</label>
+                            <input type="number" id="weight" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md" required>
+                        </div>
+                    </div>
+                    <!-- Activity Level -->
+                     <div>
+                        <label for="activity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Activity Level</label>
+                        <select id="activity" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                            <option value="1.2">Sedentary (little or no exercise)</option>
+                            <option value="1.375">Lightly active (light exercise/sports 1-3 days/week)</option>
+                            <option value="1.55">Moderately active (moderate exercise/sports 3-5 days/week)</option>
+                            <option value="1.725">Very active (hard exercise/sports 6-7 days a week)</option>
+                            <option value="1.9">Extra active (very hard exercise/physical job)</option>
+                        </select>
+                    </div>
+                    <!-- Goals & Macros -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div>
+                            <label for="goal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fitness Goal</label>
+                            <select id="goal" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                                <option value="cutting">Cutting (Lose Weight)</option>
+                                <option value="maintaining">Maintaining</option>
+                                <option value="bulking">Bulking (Gain Weight)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="macros" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Macronutrient Split</label>
+                            <select id="macros" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                                <option value="balanced">Balanced (40C/30P/30F)</option>
+                                <option value="high_protein">High Protein (30C/40P/30F)</option>
+                                <option value="low_carb">Lower Carb (25C/40P/35F)</option>
+                            </select>
+                        </div>
+                        <!-- NEW FIELD: Store Preference -->
+                        <div class="md:col-span-2">
+                            <label for="storePreference" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grocery Store Preference</label>
+                            <select id="storePreference" class="mt-1 w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                                <option value="woolworths">Woolworths</option>
+                                <option value="coles">Coles</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Dietary Restrictions -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dietary Requirements</p>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center"><input type="checkbox" id="vegetarian" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <span class="ml-2">Vegetarian</span></label>
+                            <label class="flex items-center"><input type="checkbox" id="vegan" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <span class="ml-2">Vegan</span></label>
+                        </div>
+                    </div>
+                    <!-- Actions -->
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500" onclick="closeModal('profile-modal')">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">Save & Calculate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-
-    <!-- Action -->
-    <div class="mt-10">
-      <button id="generate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-200 flex items-center gap-2 w-72 justify-center">
-        <svg id="button-icon" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M5 5a7 7 0 0012.248 4.752M19 20v-5h-5M20 20a7 7 0 00-12.248-4.752"/></svg>
-        <span id="button-text">Generate Full Week Plan</span>
-        <div id="button-loader" class="loader w-6 h-6 rounded-full border-4 border-gray-200 hidden"></div>
-      </button>
+    <div id="recipe-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden opacity-0" onclick="closeModal('recipe-modal')">
+        <div class="modal-content card-base bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform scale-95" onclick="event.stopPropagation()"></div>
     </div>
-  </div>
+    
+    <!-- Custom Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-[60]"></div>
 
-  <!-- Recipe Modal -->
-  <div id="recipe-modal" class="modal fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden opacity-0" onclick="closeModal('recipe-modal')">
-    <div class="modal-content modal-card bg-white dark:bg-gray-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-95" onclick="event.stopPropagation()"></div>
-  </div>
-  <!-- Profile Modal -->
-  <div id="profile-modal" class="modal fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden opacity-0" onclick="closeModal('profile-modal')">
-    <div class="modal-content modal-card bg-white dark:bg-gray-800 w-full max-w-md transform scale-95" onclick="event.stopPropagation()">
-      <div class="p-8">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Profile</h2>
-        <form id="profile-form">
-          <label for="goal" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary Fitness Goal</label>
-          <select id="goal" name="goal" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="maintaining">Maintaining Weight</option>
-            <option value="cutting">Cutting (Weight Loss)</option>
-            <option value="bulking">Bulking (Weight Gain)</option>
-          </select>
-          <div class="flex justify-end gap-3 mt-8">
-            <button type="button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md text-sm hover:bg-gray-300 dark:hover:bg-gray-500" onclick="closeModal('profile-modal')">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Save Profile</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+    <script type="module">
+        // --- Firebase Imports and Setup ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  <!-- ================= utils.js (BLOCK) ================= -->
-  <script>
-  const Utils = (() => {
-    const FRACTIONS = { '½':0.5,'⅓':1/3,'⅔':2/3,'¼':0.25,'¾':0.75,'⅛':0.125,'⅜':0.375,'⅝':0.625,'⅞':0.875 };
-    function toNumberLoose(str){
-      if(!str) return 0;
-      let s = String(str).trim().replace(/[½⅓⅔¼¾⅛⅜⅝⅞]/g, ch => ' '+FRACTIONS[ch]);
-      const range = s.match(/(\d+(?:\.\d+)?)[\s]*[-–][\s]*(\d+(?:\.\d+)?)/);
-      if(range){ return (parseFloat(range[1]) + parseFloat(range[2]))/2; }
-      const parts = s.split(/\s+/).map(x => parseFloat(x)).filter(n => !Number.isNaN(n));
-      return parts.length ? parts.reduce((a,b)=>a+b,0) : 0;
-    }
-    const round2 = n => Math.round(n*100)/100;
-    const round0 = n => Math.round(n);
-    const normalizeKey = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-    return { toNumberLoose, round2, round0, normalizeKey };
-  })();
-  </script>
+        // Global Firebase Variables (Provided by Canvas Environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-  <!-- ============== foods.core.js (BLOCK — per 100 g) ============== -->
-  <script>
-  const FoodsCore = {
-    'chicken breast, raw': { kcal:120, protein:22.5, carbs:0,    fat:2.6 },
-    'white rice, cooked':  { kcal:130, protein:2.4,  carbs:28.2, fat:0.3 },
-    'olive oil':           { kcal:884, protein:0,    carbs:0,    fat:100 },
-    'broccoli, raw':       { kcal:34,  protein:2.8,  carbs:6.6,  fat:0.4 },
-    'salmon, raw':         { kcal:208, protein:20,   carbs:0,    fat:13 },
-    'egg, whole':          { kcal:155, protein:13,   carbs:1.1,  fat:11 },
-    'oats, dry':           { kcal:379, protein:13.2, carbs:67.7, fat:6.5 },
-    'banana':              { kcal:89,  protein:1.1,  carbs:23,   fat:0.3 },
-    'peanut butter':       { kcal:588, protein:25,   carbs:20,   fat:50 },
-    'greek yogurt':        { kcal:97,  protein:9,    carbs:3.6,  fat:5 },
+        let db = null;
+        let auth = null;
+        let userId = null;
+        let isAuthReady = false;
 
-    /* New items for your screenshot */
-    'plain flour':         { kcal:364, protein:10.3, carbs:76.3, fat:1.0 },
-    'butter':              { kcal:717, protein:0.9,  carbs:0.1,  fat:81.0 },
-    'golden syrup':        { kcal:319, protein:0.0,  carbs:79.5, fat:0.0 },
-    'breadcrumbs':         { kcal:395, protein:13.4, carbs:71.6, fat:5.3 },
-    'lemon':               { kcal:29,  protein:1.1,  carbs:9.3,  fat:0.3 }
-  };
+        // State
+        let weeklyPlan = [];
+        let userProfile = null;
 
-  function getFoodPer100g(key){
-    const k = Utils.normalizeKey(key);
-    if (FoodsCore[k]) return FoodsCore[k];
-    if (k.includes('chicken'))     return FoodsCore['chicken breast, raw'];
-    if (k.includes('salmon'))      return FoodsCore['salmon, raw'];
-    if (k.includes('broccoli'))    return FoodsCore['broccoli, raw'];
-    if (k.includes('rice'))        return FoodsCore['white rice, cooked'];
-    if (k.includes('yogurt'))      return FoodsCore['greek yogurt'];
-    if (k.includes('flour'))       return FoodsCore['plain flour'];
-    if (k.includes('butter'))      return FoodsCore['butter'];
-    if (k.includes('syrup'))       return FoodsCore['golden syrup'];
-    if (k.includes('breadcrumb'))  return FoodsCore['breadcrumbs'];
-    if (k.includes('lemon'))       return FoodsCore['lemon'];
-    return null; // unknown → treated as approx/0
-  }
-  </script>
+        // --- Firebase Initialization and Auth ---
+        
+        const initFirebase = async () => {
+            if (!firebaseConfig) {
+                console.error("Firebase configuration is missing.");
+                showToast("Error: Firebase configuration missing. Data cannot be saved.", "error");
+                updateUIForProfile(false);
+                return;
+            }
 
-  <!-- ========= portion-maps.js (BLOCK — unit→g & densities) ========= -->
-  <script>
-  const UnitToGram = {
-    'g':1, 'gram':1, 'grams':1, 'kg':1000,
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('Debug'); // Enable debug logging for Firestore
 
-    /* spoons/cups (generic) */
-    'tsp':4.2, 'tsps':4.2, 'teaspoon':4.2, 'teaspoons':4.2,
-    'tbsp':13.8, 'tbs':13.8, 'tblsp':13.8, 'tbspn':13.8, 'tablespoon':13.8, 'tablespoons':13.8,
-    'cup':240, 'cups':240,
+                await new Promise((resolve) => {
+                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                        } else {
+                            // Attempt anonymous sign-in if no user is found
+                            try {
+                                await signInAnonymously(auth);
+                                userId = auth.currentUser.uid;
+                            } catch (e) {
+                                console.error("Anonymous sign-in failed:", e);
+                                userId = crypto.randomUUID(); // Fallback to a random ID
+                            }
+                        }
+                        isAuthReady = true;
+                        unsubscribe(); 
+                        resolve();
+                    });
+                });
+                
+                if (initialAuthToken && auth.currentUser.isAnonymous) {
+                     try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        userId = auth.currentUser.uid;
+                    } catch (e) {
+                        console.error("Custom token sign-in failed, continuing anonymously:", e);
+                    }
+                }
+                
+                await loadProfile();
 
-    /* other weight & volume */
-    'ml':1, 'l':1000,
-    'oz':28.35, 'ounce':28.35, 'ounces':28.35, 'ozs':28.35,
-    'lb':453.6, 'lbs':453.6, 'pound':453.6
-  };
+            } catch (e) {
+                console.error("Firebase initialization failed:", e);
+                showToast("Error initializing application. Check console for details.", "error");
+            }
+        };
 
-  const DensityOverrides = {
-    'olive oil':          { tbsp:13.5, tsp:4.5, cup:216 },
-    'white rice, cooked': { cup:185 },
-    'oats, dry':          { cup:90 },
-    'peanut butter':      { tbsp:16 },
-    'greek yogurt':       { cup:245 },
-    'banana':             { unit:118 },
-    'egg, whole':         { unit:50 },
-    'lemon':              { unit:58 }   /* average lemon, flesh + juice */
-  };
 
-  function toGrams(qty, unit, normName){
-    const n = Utils.normalizeKey(normName);
-    const u = (unit||'').toLowerCase().trim();
+        // --- Expanded & Tagged Meal Database (Now with Ingredients) ---
+        const MEAL_DATABASE = {
+            breakfasts: [
+                { name: 'Porridge with Berries', calories: 350, protein: 10, carbs: 60, fat: 8, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/F4D03F/333333?text=Porridge', ingredients: ['Rolled Oats', 'Almond Milk', 'Mixed Berries', 'Cinnamon'] },
+                { name: 'Two Eggs on Sourdough', calories: 400, protein: 25, carbs: 35, fat: 18, tags: ['vegetarian'], image: 'https://placehold.co/600x400/E8F8F5/333333?text=Eggs+on+Toast', ingredients: ['Eggs', 'Sourdough Bread', 'Butter', 'Salt and Pepper'] },
+                { name: 'Greek Yogurt with Granola', calories: 380, protein: 20, carbs: 45, fat: 15, tags: ['vegetarian'], image: 'https://placehold.co/600x400/D6EAF8/333333?text=Yogurt', ingredients: ['Greek Yogurt', 'Granola', 'Honey', 'Walnuts'] },
+                { name: 'Avocado Toast (1 slice)', calories: 280, protein: 8, carbs: 25, fat: 18, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/D5F5E3/333333?text=Avocado+Toast', ingredients: ['Wholemeal Bread', 'Avocado', 'Lime Juice', 'Chilli Flakes'] },
+                { name: 'Weet-Bix with Milk & Banana', calories: 320, protein: 12, carbs: 65, fat: 4, tags: ['vegetarian'], image: 'https://placehold.co/600x400/EBDEF0/333333?text=Weet-Bix', ingredients: ['Weet-Bix', 'Dairy Milk', 'Banana', 'Sugar'] },
+                { name: 'Protein Smoothie (Whey)', calories: 450, protein: 30, carbs: 50, fat: 12, tags: ['vegetarian'], image: 'https://placehold.co/600x400/F5B7B1/333333?text=Smoothie', ingredients: ['Whey Protein Powder', 'Banana', 'Spinach', 'Peanut Butter', 'Water'] },
+                { name: 'Tofu Scramble', calories: 330, protein: 22, carbs: 15, fat: 20, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/F9E79F/333333?text=Tofu+Scramble', ingredients: ['Firm Tofu', 'Turmeric Powder', 'Nutritional Yeast', 'Onion', 'Bell Peppers'] },
+            ],
+            mainMeals: [
+                { name: 'Chicken Breast & Veggies', calories: 450, protein: 50, carbs: 20, fat: 20, tags: [], image: 'https://placehold.co/600x400/A3E4D7/333333?text=Chicken+Breast', ingredients: ['Chicken Breast Fillets', 'Broccoli Florets', 'Carrots', 'Olive Oil', 'Garlic Powder'] },
+                { name: 'Chicken Stir-fry with Rice', calories: 550, protein: 40, carbs: 60, fat: 15, tags: [], image: 'https://placehold.co/600x400/A2D9CE/333333?text=Chicken+Stir-fry', ingredients: ['Chicken Thigh', 'Soy Sauce', 'Mixed Frozen Vegetables', 'Rice', 'Ginger'] },
+                { name: 'Spaghetti Bolognese', calories: 600, protein: 35, carbs: 70, fat: 20, tags: [], image: 'https://placehold.co/600x400/E59866/333333?text=Bolognese', ingredients: ['Beef Mince', 'Spaghetti Pasta', 'Tomato Paste', 'Onion', 'Parmesan Cheese'] },
+                { name: 'Steak with Salad & Chips', calories: 700, protein: 50, carbs: 40, fat: 38, tags: [], image: 'https://placehold.co/600x400/D98880/333333?text=Steak', ingredients: ['Rump Steak', 'Potatoes', 'Mixed Salad Leaves', 'Dressing'] },
+                { name: 'Beef Stew with Bread', calories: 580, protein: 45, carbs: 55, fat: 22, tags: [], image: 'https://placehold.co/600x400/C39BD3/333333?text=Beef+Stew', ingredients: ['Diced Beef', 'Beef Stock', 'Carrots', 'Potatoes', 'Crusty Bread'] },
+                { name: 'Grilled Salmon & Asparagus', calories: 500, protein: 45, carbs: 10, fat: 32, tags: [], image: 'https://placehold.co/600x400/AED6F1/333333?text=Salmon', ingredients: ['Salmon Fillets', 'Asparagus', 'Lemon', 'Salt', 'Black Pepper'] },
+                { name: 'Tuna Pasta Bake', calories: 580, protein: 30, carbs: 75, fat: 18, tags: [], image: 'https://placehold.co/600x400/A569BD/333333?text=Tuna+Bake', ingredients: ['Canned Tuna', 'Pasta Shells', 'Cream Sauce', 'Cheese', 'Peas'] },
+                { name: 'Lentil Soup with Bread', calories: 450, protein: 20, carbs: 80, fat: 5, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/A9DFBF/333333?text=Lentil+Soup', ingredients: ['Brown Lentils', 'Vegetable Stock', 'Diced Tomatoes', 'Carrots', 'Bread Rolls'] },
+                { name: 'Vegetable Curry with Rice', calories: 520, protein: 15, carbs: 85, fat: 12, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/F9E79F/333333?text=Veg+Curry', ingredients: ['Potatoes', 'Cauliflower', 'Coconut Milk', 'Curry Powder', 'Basmati Rice'] },
+                { name: 'Tofu Stir-fry with Noodles', calories: 500, protein: 25, carbs: 65, fat: 15, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/F5CBA7/333333?text=Tofu+Stir-fry', ingredients: ['Firm Tofu', 'Soy Noodles', 'Broccoli', 'Soy Sauce', 'Sesame Oil'] },
+                { name: 'Lamb Chops with Roast Veg', calories: 680, protein: 45, carbs: 35, fat: 40, tags: [], image: 'https://placehold.co/600x400/D2B4DE/333333?text=Lamb+Chops', ingredients: ['Lamb Chops', 'Rosemary', 'Sweet Potato', 'Zucchini', 'Olive Oil'] },
+                { name: 'Chicken Schnitzel & Salad', calories: 600, protein: 40, carbs: 40, fat: 30, tags: [], image: 'https://placehold.co/600x400/85C1E9/333333?text=Schnitzel', ingredients: ['Chicken Breast', 'Bread Crumbs', 'Eggs', 'Salad Mix', 'Mayonnaise'] },
+                { name: 'Caesar Salad with Chicken', calories: 480, protein: 40, carbs: 15, fat: 30, tags: [], image: 'https://placehold.co/600x400/82E0AA/333333?text=Caesar+Salad', ingredients: ['Cos Lettuce', 'Chicken Strips', 'Bacon', 'Croutons', 'Caesar Dressing'] },
+                { name: 'Chickpea & Spinach Curry', calories: 480, protein: 18, carbs: 70, fat: 14, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/F7DC6F/333333?text=Chickpea+Curry', ingredients: ['Canned Chickpeas', 'Spinach', 'Curry Paste', 'Canned Tomatoes', 'Onion'] },
+                { name: 'Black Bean Burgers', calories: 550, protein: 25, carbs: 60, fat: 23, tags: ['vegetarian', 'vegan'], image: 'https://placehold.co/600x400/B2BABB/333333?text=Bean+Burger', ingredients: ['Canned Black Beans', 'Burger Buns', 'Lettuce', 'Tomato', 'Sauce'] },
+            ]
+        };
 
-    // piece-like units (banana, egg, lemon)
-    if ((u==='' || u==='unit' || u==='piece') && DensityOverrides[n]?.unit) {
-      return qty * DensityOverrides[n].unit;
-    }
+        const MACRO_SPLITS = {
+            balanced: { c: 0.40, p: 0.30, f: 0.30 },
+            high_protein: { c: 0.30, p: 0.40, f: 0.30 },
+            low_carb: { c: 0.25, p: 0.40, f: 0.35 }
+        };
+        
+        // Define store search URL builders
+        const STORE_SEARCH_URLS = {
+            woolworths: (term) => `https://www.woolworths.com.au/shop/search/products?searchTerm=${encodeURIComponent(term)}`,
+            coles: (term) => `https://www.coles.com.au/search?query=${encodeURIComponent(term)}`
+        };
 
-    // ingredient-specific densities first
-    if (DensityOverrides[n] && DensityOverrides[n][u] != null) return qty * DensityOverrides[n][u];
-    if (UnitToGram[u] != null) return qty * UnitToGram[u];
 
-    return 0; // unknown unit → 0 grams (flagged as approx/unknown in UI)
-  }
-  </script>
+        // DOM Elements
+        const generateBtn = document.getElementById('generate-btn');
+        const weeklyPlanContainer = document.getElementById('weekly-plan-container');
+        const placeholder = document.getElementById('placeholder');
+        const placeholderText = document.getElementById('placeholder-text');
+        const subtitle = document.getElementById('subtitle');
+        const profileBtn = document.getElementById('profile-btn');
+        const weeklySummaryContainer = document.getElementById('weekly-summary-container');
 
-  <!-- ======= nutritionEngine.js (BLOCK — pure math, no DOM) ======= -->
-  <script>
-  const NutritionEngine = (() => {
-    function normalizeIngredientName(name){
-      let n = String(name||'').toLowerCase().trim();
-      n = n.replace(/\bskinless\b|\bbone[- ]?less\b/g,'').replace(/\s+/g,' ').trim();
+        // Profile Form Inputs
+        const profileForm = document.getElementById('profile-form');
+        const formInputs = {
+            age: document.getElementById('age'),
+            sex: document.getElementById('sex'),
+            height: document.getElementById('height'),
+            weight: document.getElementById('weight'),
+            activity: document.getElementById('activity'),
+            goal: document.getElementById('goal'),
+            macros: document.getElementById('macros'),
+            storePreference: document.getElementById('storePreference'), // <-- NEW
+            vegetarian: document.getElementById('vegetarian'),
+            vegan: document.getElementById('vegan')
+        };
+        
+        // --- Utility Functions ---
 
-      if (n.includes('chicken breast')) return 'chicken breast, raw';
-      if (n.includes('yogurt'))         return 'greek yogurt';
-      if (n==='egg' || n==='eggs' || n.includes('egg')) return 'egg, whole';
-      if (n.includes('plain flour') || n.includes('all purpose flour') || n.includes('all-purpose flour') || n.includes('ap flour') || n.endsWith(' flour')) return 'plain flour';
-      if (n.includes('butter'))         return 'butter';
-      if (n.includes('golden syrup'))   return 'golden syrup';
-      if (n.includes('breadcrumb'))     return 'breadcrumbs';
-      if (n.includes('lemon'))          return 'lemon';
-      return n;
-    }
+        const getProfileDocRef = () => {
+            if (!db || !userId) return null;
+            // Private Data Path: /artifacts/{appId}/users/{userId}/plannerData/profileDoc
+            return doc(db, 'artifacts', appId, 'users', userId, 'plannerData', 'profileDoc');
+        };
 
-    function parseMeasure(measureStr, ingredientName){
-      if (!measureStr) return { qty:0, unit:'g', grams:0, approx:false };
+        const showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const color = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
 
-      // Normalize like "250g" → "250 g"
-      const raw = measureStr.trim().toLowerCase();
-      const spaced = raw.replace(/(\d)([a-zA-Z])/g, '$1 $2');
+            const toast = document.createElement('div');
+            toast.className = `p-3 rounded-lg shadow-xl text-white ${color} transition-all duration-300 transform translate-y-2 opacity-0 text-sm`;
+            toast.textContent = message;
 
-      const qty = Utils.toNumberLoose(spaced);
-      const unitMatch = spaced.match(/\b(g|gram|grams|kg|tsp|tsps|teaspoon|teaspoons|tbsp|tbs|tblsp|tbspn|tablespoon|tablespoons|cup|cups|ml|l|oz|ounce|ounces|ozs|lb|lbs|pound|egg|eggs|banana|piece|unit)\b/);
-      let unit = unitMatch ? unitMatch[1] : '';
+            container.appendChild(toast);
 
-      // piece-like heuristics
-      if (unit==='egg' || unit==='eggs' || spaced.includes('egg')) unit = 'unit';
-      if (spaced.includes('banana')) unit = 'unit';
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
 
-      // special-case: lemon zest → tiny amount (approx 2 g per lemon)
-      if (spaced.includes('zest') && String(ingredientName).toLowerCase().includes('lemon')) {
-        return { qty, unit:'unit', grams: qty * 2, approx:true };
-      }
+            // Animate out and remove
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        };
 
-      const norm = normalizeIngredientName(ingredientName);
-      const grams = toGrams(qty, unit, norm);
-      const approx = grams === 0;
-      return { qty, unit: unit || 'g', grams, approx };
-    }
+        // --- Core Logic ---
+        
+        const calculateTargets = (profile) => {
+            const { age, sex, height, weight, activity, goal, macros } = profile;
+            // Mifflin-St Jeor Equation for BMR
+            const bmr = (10 * weight) + (6.25 * height) - (5 * age) + (sex === 'male' ? 5 : -161);
+            const tdee = bmr * activity;
+            
+            let calorieTarget = tdee;
+            if (goal === 'cutting') calorieTarget -= 500;
+            if (goal === 'bulking') calorieTarget += 500;
+            
+            const split = MACRO_SPLITS[macros];
+            const proteinTarget = Math.round((calorieTarget * split.p) / 4);
+            const carbsTarget = Math.round((calorieTarget * split.c) / 4);
+            const fatTarget = Math.round((calorieTarget * split.f) / 9);
 
-    function macrosFor(ingredientName, grams){
-      const per100 = getFoodPer100g(ingredientName);
-      if (!per100 || grams <= 0) return { kcal:0, protein:0, carbs:0, fat:0, unknown:!per100 };
-      const f = grams / 100;
-      return {
-        kcal: per100.kcal * f,
-        protein: per100.protein * f,
-        carbs: per100.carbs * f,
-        fat: per100.fat * f,
-        unknown: false
-      };
-    }
+            return { calorieTarget: Math.round(calorieTarget), proteinTarget, carbsTarget, fatTarget };
+        };
 
-    function computeMealMacrosFromApiMeal(meal){
-      const ingredients = [];
-      for (let i=1;i<=20;i++){
-        const ing = meal['strIngredient'+i];
-        const meas = meal['strMeasure'+i];
-        if (ing && ing.trim()) ingredients.push({ name: ing, measure: meas || '' });
-        else break;
-      }
+        const findBestDayPlan = (targets, filteredDb) => {
+            const { calorieTarget, proteinTarget, carbsTarget } = targets;
+            let bestCombination = null;
+            let lowestScore = Infinity;
 
-      const rows = [];
-      let totals = { kcal:0, protein:0, carbs:0, fat:0 };
-      let flags = { unknowns:0, approx:0 };
+            // Simple randomization for variety
+            const getRandomMeal = (type) => filteredDb[type][Math.floor(Math.random() * filteredDb[type].length)];
 
-      for (const ing of ingredients){
-        const pm = parseMeasure(ing.measure, ing.name);
-        const m  = macrosFor(ing.name, pm.grams);
-        if (m.unknown) flags.unknowns++;
-        if (pm.approx) flags.approx++;
+            for (let i = 0; i < 250; i++) { // Increase attempts for better optimization
+                const breakfast = getRandomMeal('breakfasts');
+                const lunch = getRandomMeal('mainMeals');
+                const dinner = getRandomMeal('mainMeals');
 
-        totals.kcal    += m.kcal;
-        totals.protein += m.protein;
-        totals.carbs   += m.carbs;
-        totals.fat     += m.fat;
+                if (lunch.name === dinner.name) continue; // Ensure variety
 
-        rows.push({
-          ingredient: ing.name, measure: ing.measure, grams: Utils.round2(pm.grams),
-          kcal: Utils.round2(m.kcal), protein: Utils.round2(m.protein), carbs: Utils.round2(m.carbs), fat: Utils.round2(m.fat),
-          unknown: m.unknown, approx: pm.approx
+                const totalCals = breakfast.calories + lunch.calories + dinner.calories;
+                const totalProt = breakfast.protein + lunch.protein + dinner.protein;
+                const totalCarbs = breakfast.carbs + lunch.carbs + dinner.carbs;
+
+                // Score is a weighted sum of the squared errors from targets (Focus on Cals/Protein)
+                const calError = ((totalCals - calorieTarget) / calorieTarget) * 100; // % error
+                const protError = ((totalProt - proteinTarget) / proteinTarget) * 100;
+                const carbError = ((totalCarbs - carbsTarget) / carbsTarget) * 100;
+
+                // Give extra weight to calories and protein accuracy
+                const score = (calError * calError * 3) + (protError * protError * 2) + (carbError * carbError);
+
+                if (score < lowestScore) {
+                    lowestScore = score;
+                    bestCombination = { breakfast, lunch, dinner };
+                }
+            }
+            // Fallback: If no good combination is found, return the last attempted combo or simple defaults
+            if (!bestCombination) {
+                 bestCombination = { breakfast: getRandomMeal('breakfasts'), lunch: getRandomMeal('mainMeals'), dinner: getRandomMeal('mainMeals') };
+            }
+
+            return bestCombination; 
+        };
+
+        const generateWeeklyPlan = () => {
+            if (!userProfile) {
+                showToast("Please complete your profile first.", "error");
+                return;
+            }
+            setLoading(true);
+            placeholder.classList.add('hidden');
+            weeklyPlanContainer.innerHTML = '';
+            
+            const targets = calculateTargets(userProfile);
+            
+            // Filter database based on dietary needs
+            let filteredBreakfasts = MEAL_DATABASE.breakfasts;
+            let filteredMainMeals = MEAL_DATABASE.mainMeals;
+            if (userProfile.vegan) {
+                filteredBreakfasts = filteredBreakfasts.filter(m => m.tags.includes('vegan'));
+                filteredMainMeals = filteredMainMeals.filter(m => m.tags.includes('vegan'));
+            } else if (userProfile.vegetarian) {
+                filteredBreakfasts = filteredBreakfasts.filter(m => m.tags.includes('vegetarian'));
+                filteredMainMeals = filteredMainMeals.filter(m => m.tags.includes('vegetarian'));
+            }
+
+            if (filteredBreakfasts.length === 0 || filteredMainMeals.length < 2) {
+                 displayError("Could not generate a plan. Not enough meals in the database match your dietary requirements.");
+                 setLoading(false);
+                 return;
+            }
+
+            const filteredDb = { breakfasts: filteredBreakfasts, mainMeals: filteredMainMeals };
+            weeklyPlan = Array.from({ length: 7 }, () => findBestDayPlan(targets, filteredDb));
+            
+            displayWeeklyPlan(weeklyPlan);
+            displayWeeklySummary(weeklyPlan, targets);
+            setLoading(false);
+        };
+
+        // --- UI & Display ---
+
+        const displayWeeklyPlan = (plan) => {
+            const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            weeklyPlanContainer.innerHTML = ''; // Clear previous plan
+            plan.forEach((dayPlan, index) => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'rounded-2xl shadow-lg overflow-hidden day-card card-base flex flex-col';
+                const dailyTotal = Object.values(dayPlan).reduce((acc, meal) => {
+                    acc.calories += meal.calories; acc.protein += meal.protein;
+                    acc.carbs += meal.carbs; acc.fat += meal.fat;
+                    return acc;
+                }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+                
+                dayCard.innerHTML = `
+                    <div class="p-4 bg-gray-900/10 dark:bg-black/20"><h2 class="text-xl font-bold text-center text-gray-900 dark:text-white">${DAYS_OF_WEEK[index]}</h2></div>
+                    <div class="p-4 flex flex-col space-y-3 flex-grow">
+                        ${createMealSection('Breakfast', dayPlan.breakfast, {day: index, type: 'breakfast'})}
+                        ${createMealSection('Lunch', dayPlan.lunch, {day: index, type: 'lunch'})}
+                        ${createMealSection('Dinner', dayPlan.dinner, {day: index, type: 'dinner'})}
+                    </div>
+                    <div class="p-4 mt-auto border-t border-gray-300 dark:border-gray-600/50 bg-gray-500/10 dark:bg-black/20">
+                        <h3 class="font-bold text-center text-sm">Daily Totals</h3>
+                        <div class="text-xs text-center mt-1">${dailyTotal.calories} kcal &bull; ${dailyTotal.protein}g P &bull; ${dailyTotal.carbs}g C &bull; ${dailyTotal.fat}g F</div>
+                    </div>`;
+                weeklyPlanContainer.appendChild(dayCard);
+            });
+        };
+
+        const createMealSection = (title, meal, id) => {
+            const imageUrl = meal.image.replace('/preview', ''); 
+            return `<div>
+                <p class="font-semibold text-gray-500 dark:text-gray-400 text-xs mb-1">${title}</p>
+                <div class="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-gray-500/10" data-meal-id='${JSON.stringify(id)}' onclick="showRecipeModal(this.dataset.mealId)">
+                    <img src="${imageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/94A3B8/ffffff?text=Meal';" alt="${meal.name}" class="w-10 h-10 object-cover rounded-md flex-shrink-0">
+                    <div class="flex-grow min-w-0"><h4 class="text-sm font-semibold truncate">${meal.name}</h4><p class="text-xs text-gray-500 dark:text-gray-400">${meal.calories} kcal</p></div>
+                </div></div>`;
+        };
+
+        const displayWeeklySummary = (plan, targets) => {
+            const totals = plan.reduce((acc, day) => {
+                const dayTotal = Object.values(day).reduce((dAcc, meal) => {
+                    dAcc.calories += meal.calories; dAcc.protein += meal.protein; dAcc.carbs += meal.carbs; dAcc.fat += meal.fat;
+                    return dAcc;
+                }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+                Object.keys(dayTotal).forEach(key => acc[key] += dayTotal[key]);
+                return acc;
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+            document.getElementById('daily-targets-summary').innerHTML = `${targets.calorieTarget} kcal &bull; ${targets.proteinTarget}g P &bull; ${targets.carbsTarget}g C &bull; ${targets.fatTarget}g F`;
+            document.getElementById('avg-actual-summary').innerHTML = `${Math.round(totals.calories/7)} kcal &bull; ${Math.round(totals.protein/7)}g P &bull; ${Math.round(totals.carbs/7)}g C &bull; ${Math.round(totals.fat/7)}g F`;
+            weeklySummaryContainer.classList.remove('hidden');
+        };
+
+        const showRecipeModal = (id) => {
+            try {
+                const { day, type } = JSON.parse(id);
+                const meal = weeklyPlan[day][type];
+                if (!meal) throw new Error("Meal not found");
+                
+                const imageUrl = meal.image.replace('/preview', ''); // Clean up placeholder URL
+                const userStore = userProfile?.storePreference || 'woolworths';
+                const getStoreUrl = STORE_SEARCH_URLS[userStore];
+
+                const ingredientListHTML = (meal.ingredients || []).map(ingredient => {
+                    const url = getStoreUrl(ingredient);
+                    return `<li class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                                <span class="text-gray-700 dark:text-gray-300 font-medium">${ingredient}</span>
+                                <a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-500 text-sm font-semibold transition-colors flex items-center space-x-1">
+                                    <span>Shop at ${userStore.charAt(0).toUpperCase() + userStore.slice(1)}</span> 
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                </a>
+                            </li>`;
+                }).join('');
+
+
+                document.getElementById('recipe-modal').querySelector('.modal-content').innerHTML = `
+                    <div class="relative p-6 md:p-8">
+                        <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl" onclick="closeModal('recipe-modal')">&times;</button>
+                        <img src="${imageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/94A3B8/ffffff?text=Meal';" alt="${meal.name}" class="w-full h-48 object-cover rounded-lg mb-4">
+                        <h2 class="text-3xl font-bold mb-4">${meal.name}</h2>
+                        <h3 class="text-xl font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">Nutritional Information (Approx.)</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                           <p><b>Calories:</b> ${meal.calories} kcal</p><p><b>Protein:</b> ${meal.protein} g</p>
+                           <p><b>Carbs:</b> ${meal.carbs} g</p><p><b>Fat:</b> ${meal.fat} g</p>
+                        </div>
+                        <h3 class="text-xl font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 mb-3 mt-6">Ingredients & Shopping List</h3>
+                        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                           ${ingredientListHTML}
+                        </ul>
+                        <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">Links open to your preferred store's search results.</p>
+                    </div>`;
+                openModal('recipe-modal');
+            } catch (e) {
+                console.error("Failed to show recipe modal:", e);
+                showToast("Error loading recipe details.", "error");
+            }
+        };
+        
+        const displayError = (message) => {
+            placeholder.classList.remove('hidden');
+            weeklyPlanContainer.innerHTML = '';
+            weeklySummaryContainer.classList.add('hidden');
+            placeholderText.textContent = message;
+        };
+        
+        // --- Modals & Profile Management ---
+
+        const openModal = (id) => {
+            const modal = document.getElementById(id);
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        };
+        const closeModal = (id) => {
+            const modal = document.getElementById(id);
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        const saveProfile = async () => {
+            if (!isAuthReady || !db) {
+                showToast("Application not ready. Please wait for initialization.", "error");
+                return;
+            }
+
+            const profileData = {
+                age: parseInt(formInputs.age.value),
+                sex: formInputs.sex.value,
+                height: parseInt(formInputs.height.value),
+                weight: parseInt(formInputs.weight.value),
+                activity: parseFloat(formInputs.activity.value),
+                goal: formInputs.goal.value,
+                macros: formInputs.macros.value,
+                storePreference: formInputs.storePreference.value, // <-- SAVE NEW FIELD
+                vegetarian: formInputs.vegetarian.checked,
+                vegan: formInputs.vegan.checked
+            };
+            
+            if(profileData.vegan) profileData.vegetarian = true; // Vegan is also vegetarian
+            
+            try {
+                const docRef = getProfileDocRef();
+                await setDoc(docRef, profileData);
+                userProfile = profileData;
+                updateUIForProfile(true);
+                closeModal('profile-modal');
+                showToast("Profile saved successfully to Firestore!", "success");
+            } catch (e) {
+                console.error("Error saving profile to Firestore: ", e);
+                showToast("Error saving profile. Please check the console.", "error");
+            }
+        };
+
+        const loadProfile = async () => {
+            if (!isAuthReady || !db) return; 
+
+            try {
+                const docRef = getProfileDocRef();
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    userProfile = docSnap.data();
+                    showToast("Profile loaded from Firestore.", "info");
+                } else {
+                    userProfile = null;
+                    showToast("No saved profile found. Please enter your details.", "info");
+                }
+                
+                updateUIForProfile(true);
+
+            } catch (e) {
+                console.error("Error loading profile from Firestore: ", e);
+                showToast("Error loading profile. Starting with default settings.", "error");
+                updateUIForProfile(true); // Still update UI even on load failure
+            }
+        };
+
+        const updateUIForProfile = (isReady) => {
+            placeholderText.textContent = isReady ? 'Please complete your profile to generate a personalized meal plan.' : 'Loading user profile...';
+            
+            if (userProfile) {
+                // Populate form fields with loaded data
+                Object.keys(formInputs).forEach(key => {
+                    if (formInputs[key].type === 'checkbox') {
+                        formInputs[key].checked = userProfile[key] || false;
+                    } else if (userProfile[key] !== undefined) {
+                        formInputs[key].value = userProfile[key];
+                    }
+                });
+
+                const goalText = userProfile.goal.charAt(0).toUpperCase() + userProfile.goal.slice(1);
+                subtitle.textContent = `Goal: ${goalText} | User ID: ${userId.slice(0, 4)}...`;
+                placeholderText.textContent = `Click the button below to generate your weekly meal plan!`;
+                generateBtn.disabled = false;
+            } else if (isReady) {
+                // Not loaded but ready to accept input
+                subtitle.textContent = 'Your data-driven meal plan';
+                placeholderText.textContent = 'Please complete your profile to generate a personalized meal plan.';
+                generateBtn.disabled = true;
+            } else {
+                // Not ready (initial state)
+                generateBtn.disabled = true;
+            }
+        };
+        
+        const setLoading = (isLoading) => {
+            generateBtn.disabled = isLoading;
+            document.getElementById('button-text').classList.toggle('hidden', isLoading);
+            document.getElementById('button-icon').classList.toggle('hidden', isLoading);
+            document.getElementById('button-loader').classList.toggle('hidden', !isLoading);
+        };
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', initFirebase);
+        generateBtn.addEventListener('click', generateWeeklyPlan);
+        profileBtn.addEventListener('click', () => openModal('profile-modal'));
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveProfile();
         });
-      }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") {
+                closeModal('recipe-modal');
+                closeModal('profile-modal');
+            }
+        });
 
-      totals = {
-        kcal: Utils.round0(totals.kcal),
-        protein: Utils.round2(totals.protein),
-        carbs: Utils.round2(totals.carbs),
-        fat: Utils.round2(totals.fat)
-      };
-
-      return { totals, rows, flags };
-    }
-
-    function sumTotals(list){
-      return list.reduce((a,b)=>({
-        kcal: a.kcal + b.kcal,
-        protein: a.protein + b.protein,
-        carbs: a.carbs + b.carbs,
-        fat: a.fat + b.fat
-      }), {kcal:0, protein:0, carbs:0, fat:0});
-    }
-
-    return { computeMealMacrosFromApiMeal, sumTotals };
-  })();
-  </script>
-
-  <!-- ================= ui.js (BLOCK) ================= -->
-  <script>
-  function badgesHTML(t){
-    return `<div class="text-xs text-gray-700 dark:text-gray-300 mt-1 flex flex-wrap gap-2">
-      <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">P ${t.protein} g</span>
-      <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">C ${t.carbs} g</span>
-      <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">F ${t.fat} g</span>
-      <span class="px-2 py-0.5 border border-gray-300/50 dark:border-gray-600/50 rounded-full">${t.kcal} kcal</span>
-    </div>`;
-  }
-
-  function mealTableHTML(rows){
-    return `<div class="mt-4">
-      <h4 class="font-semibold mb-2">Nutrition breakdown</h4>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead>
-            <tr class="text-left border-b border-gray-300 dark:border-gray-700">
-              <th class="py-2 pr-3">Ingredient</th>
-              <th class="py-2 pr-3">Measure</th>
-              <th class="py-2 pr-3">g</th>
-              <th class="py-2 pr-3">P</th>
-              <th class="py-2 pr-3">C</th>
-              <th class="py-2 pr-3">F</th>
-              <th class="py-2">Kcal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(r => `
-              <tr class="border-b border-gray-200/70 dark:border-gray-700/50">
-                <td class="py-1 pr-3">${r.ingredient}${r.unknown ? ' *' : ''}</td>
-                <td class="py-1 pr-3">${r.measure || '—'}</td>
-                <td class="py-1 pr-3">${r.grams}</td>
-                <td class="py-1 pr-3">${r.protein}</td>
-                <td class="py-1 pr-3">${r.carbs}</td>
-                <td class="py-1 pr-3">${r.fat}</td>
-                <td class="py-1">${r.kcal}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
-  }
-  </script>
-
-  <!-- ================= app.js (BLOCK) ================= -->
-  <script>
-  // DOM refs
-  const generateBtn = document.getElementById('generate-btn');
-  const weeklyPlanContainer = document.getElementById('weekly-plan-container');
-  const placeholder = document.getElementById('placeholder');
-  const placeholderText = document.getElementById('placeholder-text');
-  const subtitle = document.getElementById('subtitle');
-  const profileBtn = document.getElementById('profile-btn');
-
-  // Modals
-  const recipeModal = document.getElementById('recipe-modal');
-  const profileModal = document.getElementById('profile-modal');
-  const profileForm = document.getElementById('profile-form');
-  const goalSelect = document.getElementById('goal');
-
-  // Button bits
-  const buttonText = document.getElementById('button-text');
-  const buttonIcon = document.getElementById('button-icon');
-  const buttonLoader = document.getElementById('button-loader');
-
-  // State
-  let weeklyMeals = [];
-  let userProfile = { goal: 'maintaining' };
-
-  // API + constants
-  const API_BASE_URL = 'https://www.themealdb.com/api/json/v1/1/';
-  const DAYS_OF_WEEK = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-  const GOAL_CATEGORIES = {
-    cutting:     ['Chicken','Seafood','Vegetarian','Vegan','Breakfast'],
-    maintaining: ['Beef','Chicken','Dessert','Lamb','Miscellaneous','Pasta','Pork','Seafood','Side','Starter','Vegetarian','Breakfast','Goat'],
-    bulking:     ['Beef','Pasta','Pork','Dessert','Lamb','Chicken']
-  };
-
-  // Fetch helpers
-  const getMealForGoal = async (goal) => {
-    try {
-      const categories = GOAL_CATEGORIES[goal] || GOAL_CATEGORIES['maintaining'];
-      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-
-      const response = await fetch(`${API_BASE_URL}filter.php?c=${randomCategory}`);
-      const data = await response.json();
-
-      // guard: API sometimes returns { meals: null }
-      if (!data || !data.meals || !data.meals.length) {
-        const r = await fetch(`${API_BASE_URL}random.php`);
-        const rd = await r.json();
-        return rd.meals[0];
-      }
-
-      const hit = data.meals[Math.floor(Math.random() * data.meals.length)];
-      const detail = await fetch(`${API_BASE_URL}lookup.php?i=${hit.idMeal}`);
-      const d = await detail.json();
-
-      if (!d || !d.meals || !d.meals[0]) {
-        const r = await fetch(`${API_BASE_URL}random.php`);
-        const rd = await r.json();
-        return rd.meals[0];
-      }
-      return d.meals[0];
-    } catch (e) {
-      console.error('getMealForGoal error', e);
-      const r = await fetch(`${API_BASE_URL}random.php`);
-      const rd = await r.json();
-      return rd.meals[0];
-    }
-  };
-
-  const getWeeklyMeals = async () => {
-    setLoading(true);
-    placeholder.classList.add('hidden');
-    weeklyPlanContainer.innerHTML = '';
-    try {
-      const mealPromises = Array.from({ length: 21 }, () => getMealForGoal(userProfile.goal));
-      weeklyMeals = await Promise.all(mealPromises);
-      displayWeeklyPlan(weeklyMeals);
-    } catch (e) {
-      console.error('Failed to fetch weekly meals', e);
-      displayError();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Renderers
-  const displayWeeklyPlan = (meals) => {
-    if (!meals || meals.length < 21) {
-      displayError('Not enough meals were generated. Please try again.');
-      return;
-    }
-
-    document.getElementById('week-totals-card').classList.add('hidden');
-    document.getElementById('week-totals').textContent = '—';
-
-    let weekTotals = { kcal:0, protein:0, carbs:0, fat:0 };
-
-    for (let i=0;i<7;i++){
-      const day = DAYS_OF_WEEK[i];
-      const dayCard = document.createElement('div');
-      dayCard.className = 'day-card shadow-lg overflow-hidden flex flex-col';
-
-      const breakfast = meals[i*3];
-      const lunch     = meals[i*3+1];
-      const dinner    = meals[i*3+2];
-
-      const bComp = NutritionEngine.computeMealMacrosFromApiMeal(breakfast);
-      const lComp = NutritionEngine.computeMealMacrosFromApiMeal(lunch);
-      const dComp = NutritionEngine.computeMealMacrosFromApiMeal(dinner);
-
-      const dayTotals = NutritionEngine.sumTotals([bComp.totals, lComp.totals, dComp.totals]);
-      weekTotals      = NutritionEngine.sumTotals([weekTotals, dayTotals]);
-
-      dayCard.innerHTML = `
-        <div class="p-4 bg-gray-900/10 dark:bg-black/20">
-          <h2 class="text-xl font-bold text-center text-gray-900 dark:text-white">${day}</h2>
-          <div class="mt-2 text-center text-xs text-gray-700 dark:text-gray-300">${badgesHTML(dayTotals)}</div>
-        </div>
-        <div class="p-4 flex flex-col gap-4 flex-grow">
-          ${createMealSection('Breakfast', breakfast, i*3,     bComp)}
-          ${createMealSection('Lunch',     lunch,     i*3 + 1, lComp)}
-          ${createMealSection('Dinner',    dinner,    i*3 + 2, dComp)}
-        </div>
-      `;
-      weeklyPlanContainer.appendChild(dayCard);
-    }
-
-    const w = weekTotals;
-    document.getElementById('week-totals').textContent =
-      `P ${Utils.round2(w.protein)} g • C ${Utils.round2(w.carbs)} g • F ${Utils.round2(w.fat)} g • ${Utils.round0(w.kcal)} kcal`;
-    document.getElementById('week-totals-card').classList.remove('hidden');
-  };
-
-  const createMealSection = (title, meal, index, comp) => {
-    if (!meal) return '';
-    return `
-      <div class="border-t border-gray-300 dark:border-gray-600/40 pt-4">
-        <p class="font-semibold text-gray-500 dark:text-gray-400 text-sm mb-2">${title}</p>
-        <div class="flex items-center gap-3">
-          <img src="${meal.strMealThumb}/preview" alt="${meal.strMeal}" class="w-12 h-12 object-cover rounded-md">
-          <div class="flex-grow min-w-0">
-            <h4 class="text-md font-semibold truncate text-gray-800 dark:text-gray-200">${meal.strMeal}</h4>
-            <button class="text-sm text-blue-500 hover:underline" data-meal-index="${index}">View Recipe</button>
-            ${badgesHTML(comp.totals)}
-          </div>
-        </div>
-      </div>
-    `;
-  };
-
-  const showRecipeModal = (mealIndex) => {
-    const meal = weeklyMeals[mealIndex];
-    if (!meal) return;
-
-    const comp = NutritionEngine.computeMealMacrosFromApiMeal(meal);
-
-    let ingredientsHTML = '';
-    for (let i=1;i<=20;i++){
-      const ing = meal[`strIngredient${i}`];
-      const msr = meal[`strMeasure${i}`];
-      if (ing) ingredientsHTML += `<li class="flex items-start"><span class="bg-gray-200 dark:bg-gray-700 rounded-full w-4 h-4 text-xs flex items-center justify-center mr-3 mt-1">&check;</span>${msr||''} ${ing}</li>`;
-      else break;
-    }
-
-    recipeModal.querySelector('.modal-content').innerHTML = `
-      <div class="relative p-6 md:p-8">
-        <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl" onclick="closeModal('recipe-modal')">&times;</button>
-        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">${meal.strMeal}</h2>
-        <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
-          <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full font-medium">${meal.strCategory}</span>
-          <span class="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 px-3 py-1 rounded-full font-medium">${meal.strArea}</span>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 class="text-xl font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">Ingredients</h3>
-            <ul class="space-y-2">${ingredientsHTML}</ul>
-            ${mealTableHTML(comp.rows)}
-            <div class="mt-3">${badgesHTML(comp.totals)}</div>
-            <div class="text-xs text-gray-500 mt-1">${comp.flags.unknowns>0 ? '* some items approximated via fallback.' : ''}</div>
-          </div>
-          <div class="w-full rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
-            <img src="${meal.strMealThumb}" alt="${meal.strMeal}" class="w-full h-full object-cover">
-          </div>
-        </div>
-        <div class="mt-6">
-          <h3 class="text-xl font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">Instructions</h3>
-          <p class="whitespace-pre-wrap leading-relaxed">${meal.strInstructions || ''}</p>
-        </div>
-        ${meal.strYoutube ? `
-          <div class="mt-6 text-center">
-            <a href="${meal.strYoutube}" target="_blank" rel="noopener noreferrer" class="inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Watch on YouTube</a>
-          </div>` : ''}
-      </div>
-    `;
-    openModal('recipe-modal');
-  };
-
-  // UX helpers
-  const displayError = (m="Sorry, something went wrong. Please try again!") => {
-    placeholder.classList.remove('hidden');
-    weeklyPlanContainer.innerHTML = '';
-    placeholderText.innerHTML = `<span class="text-red-500">${m}</span>`;
-  };
-
-  const openModal = (id) => {
-    const m = document.getElementById(id);
-    if (!m) return;
-    m.classList.remove('hidden');
-    setTimeout(()=>{ m.classList.remove('opacity-0'); m.querySelector('.modal-content').classList.remove('scale-95'); }, 10);
-  };
-
-  const closeModal = (id) => {
-    const m = document.getElementById(id);
-    if (!m) return;
-    m.classList.add('opacity-0'); m.querySelector('.modal-content').classList.add('scale-95');
-    setTimeout(()=> m.classList.add('hidden'), 250);
-  };
-
-  const setLoading = (is) => {
-    generateBtn.disabled = is;
-    buttonText.classList.toggle('hidden', is);
-    buttonIcon.classList.toggle('hidden', is);
-    buttonLoader.classList.toggle('hidden', !is);
-  };
-
-  // Profile
-  const saveProfile = () => {
-    userProfile.goal = goalSelect.value;
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    updateUIForProfile();
-    closeModal('profile-modal');
-  };
-
-  const loadProfile = () => {
-    const saved = localStorage.getItem('userProfile');
-    if (saved) userProfile = JSON.parse(saved);
-    goalSelect.value = userProfile.goal;
-    updateUIForProfile();
-  };
-
-  const updateUIForProfile = () => {
-    const goalText = userProfile.goal.charAt(0).toUpperCase() + userProfile.goal.slice(1);
-    subtitle.textContent = `Your personalized meal plan for: ${goalText}`;
-    placeholderText.textContent = `Click the button below to generate your weekly meal plan for ${goalText}!`;
-  };
-
-  // Events
-  document.addEventListener('DOMContentLoaded', loadProfile);
-  generateBtn.addEventListener('click', getWeeklyMeals);
-  profileBtn.addEventListener('click', () => openModal('profile-modal'));
-  profileForm.addEventListener('submit', (e)=>{ e.preventDefault(); saveProfile(); });
-  weeklyPlanContainer.addEventListener('click', (e)=>{
-    const b = e.target.closest('button[data-meal-index]');
-    if (b) showRecipeModal(b.dataset.mealIndex);
-  });
-  document.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape'){ closeModal('recipe-modal'); closeModal('profile-modal'); }
-  });
-  </script>
+        // Expose function to global scope for inline HTML click handler
+        window.showRecipeModal = showRecipeModal; 
+    </script>
 </body>
 </html>
+
