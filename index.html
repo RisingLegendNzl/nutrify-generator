@@ -188,74 +188,108 @@
 
     <script type="module">
         // --- Firebase Imports and Setup ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // We only import Firebase modules if the app is determined to run in a persistent environment.
+        let initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, getDoc, setDoc, setLogLevel;
 
         // Global Firebase Variables (Provided by Canvas Environment)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // 🛑 IMPORTANT: FOR NETLIFY/PUBLIC DEPLOYMENT 🛑
+        // This is a placeholder for a public Firebase config. Since you don't have one, 
+        // the app will default to a local, non-persistent mode on Netlify.
+        const PUBLIC_FIREBASE_CONFIG = {
+            apiKey: "YOUR_API_KEY", 
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID", 
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_ID",
+            appId: "YOUR_PUBLIC_APP_ID"
+        };
+        // -----------------------------------------------------------
 
         let db = null;
         let auth = null;
         let userId = null;
         let isAuthReady = false;
-
-        // State
-        let weeklyPlan = [];
-        let userProfile = null;
+        let isPersistentMode = false; // Flag to check if we are connected to Firestore
+        let userProfileData = null; // Global profile storage
 
         // --- Firebase Initialization and Auth ---
         
         const initFirebase = async () => {
-            if (!firebaseConfig) {
-                console.error("Firebase configuration is missing.");
-                showToast("Error: Firebase configuration missing. Data cannot be saved.", "error");
-                updateUIForProfile(false);
-                return;
-            }
+            const isCanvasEnvironment = typeof __firebase_config !== 'undefined';
+            const isPublicConfigValid = PUBLIC_FIREBASE_CONFIG && PUBLIC_FIREBASE_CONFIG.projectId !== "YOUR_PROJECT_ID";
+            
+            // 1. DETERMINE MODE
+            if (isCanvasEnvironment || isPublicConfigValid) {
+                isPersistentMode = true;
+                showToast("Persistent mode enabled: Connecting to database...", "info");
+                
+                // Dynamically import Firebase services only when needed
+                const firebaseModules = await Promise.all([
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
+                ]);
+                initializeApp = firebaseModules[0].initializeApp;
+                ({ getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = firebaseModules[1]);
+                ({ getFirestore, doc, getDoc, setDoc, setLogLevel } = firebaseModules[2]);
 
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                setLogLevel('Debug'); // Enable debug logging for Firestore
+                try {
+                    const firebaseConfig = isCanvasEnvironment ? JSON.parse(__firebase_config) : PUBLIC_FIREBASE_CONFIG;
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    setLogLevel('Debug'); // Enable debug logging for Firestore
 
-                await new Promise((resolve) => {
-                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                        if (user) {
-                            userId = user.uid;
-                        } else {
-                            // Attempt anonymous sign-in if no user is found
-                            try {
-                                await signInAnonymously(auth);
-                                userId = auth.currentUser.uid;
-                            } catch (e) {
-                                console.error("Anonymous sign-in failed:", e);
-                                userId = crypto.randomUUID(); // Fallback to a random ID
+                    await new Promise((resolve) => {
+                        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                            if (user) {
+                                userId = user.uid;
+                            } else {
+                                // Attempt anonymous sign-in if no user is found
+                                try {
+                                    await signInAnonymously(auth);
+                                    userId = auth.currentUser.uid;
+                                } catch (e) {
+                                    console.error("Anonymous sign-in failed:", e);
+                                    userId = crypto.randomUUID(); // Fallback to a random ID
+                                }
                             }
-                        }
-                        isAuthReady = true;
-                        unsubscribe(); 
-                        resolve();
+                            isAuthReady = true;
+                            unsubscribe(); 
+                            resolve();
+                        });
                     });
-                });
-                
-                if (initialAuthToken && auth.currentUser.isAnonymous) {
-                     try {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                        userId = auth.currentUser.uid;
-                    } catch (e) {
-                        console.error("Custom token sign-in failed, continuing anonymously:", e);
+                    
+                    if (initialAuthToken && auth.currentUser.isAnonymous) {
+                         try {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                            userId = auth.currentUser.uid;
+                        } catch (e) {
+                            console.error("Custom token sign-in failed, continuing anonymously:", e);
+                        }
                     }
-                }
-                
-                await loadProfile();
+                    
+                    await loadProfile();
 
-            } catch (e) {
-                console.error("Firebase initialization failed:", e);
-                showToast("Error initializing application. Check console for details.", "error");
+                } catch (e) {
+                    console.error("Firebase initialization failed:", e);
+                    isPersistentMode = false; // Disable persistence on failure
+                    isAuthReady = true;
+                    showToast("Error connecting to database. Running in local mode.", "error");
+                    updateUIForProfile(true);
+                }
+
+            } else {
+                // 2. LOCAL NON-PERSISTENT MODE (The fix for Netlify without credentials)
+                isPersistentMode = false;
+                isAuthReady = true;
+                userId = crypto.randomUUID(); // Mock user ID for local session tracking
+                
+                showToast("No database configured. App is running in local, non-persistent mode.", "error");
+                updateUIForProfile(true); // Load UI immediately
             }
         };
 
@@ -322,7 +356,7 @@
             activity: document.getElementById('activity'),
             goal: document.getElementById('goal'),
             macros: document.getElementById('macros'),
-            storePreference: document.getElementById('storePreference'), // <-- NEW
+            storePreference: document.getElementById('storePreference'),
             vegetarian: document.getElementById('vegetarian'),
             vegan: document.getElementById('vegan')
         };
@@ -418,23 +452,28 @@
         };
 
         const generateWeeklyPlan = () => {
-            if (!userProfile) {
+            if (!userProfileData) {
                 showToast("Please complete your profile first.", "error");
                 return;
             }
+            if (!isAuthReady) {
+                 showToast("Application is not ready. Please wait a moment.", "error");
+                 return;
+            }
+
             setLoading(true);
             placeholder.classList.add('hidden');
             weeklyPlanContainer.innerHTML = '';
             
-            const targets = calculateTargets(userProfile);
+            const targets = calculateTargets(userProfileData);
             
             // Filter database based on dietary needs
             let filteredBreakfasts = MEAL_DATABASE.breakfasts;
             let filteredMainMeals = MEAL_DATABASE.mainMeals;
-            if (userProfile.vegan) {
+            if (userProfileData.vegan) {
                 filteredBreakfasts = filteredBreakfasts.filter(m => m.tags.includes('vegan'));
                 filteredMainMeals = filteredMainMeals.filter(m => m.tags.includes('vegan'));
-            } else if (userProfile.vegetarian) {
+            } else if (userProfileData.vegetarian) {
                 filteredBreakfasts = filteredBreakfasts.filter(m => m.tags.includes('vegetarian'));
                 filteredMainMeals = filteredMainMeals.filter(m => m.tags.includes('vegetarian'));
             }
@@ -446,10 +485,10 @@
             }
 
             const filteredDb = { breakfasts: filteredBreakfasts, mainMeals: filteredMainMeals };
-            weeklyPlan = Array.from({ length: 7 }, () => findBestDayPlan(targets, filteredDb));
+            window.weeklyPlan = Array.from({ length: 7 }, () => findBestDayPlan(targets, filteredDb));
             
-            displayWeeklyPlan(weeklyPlan);
-            displayWeeklySummary(weeklyPlan, targets);
+            displayWeeklyPlan(window.weeklyPlan);
+            displayWeeklySummary(window.weeklyPlan, targets);
             setLoading(false);
         };
 
@@ -509,12 +548,13 @@
 
         const showRecipeModal = (id) => {
             try {
+                // weeklyPlan is stored on window scope
                 const { day, type } = JSON.parse(id);
-                const meal = weeklyPlan[day][type];
+                const meal = window.weeklyPlan[day][type];
                 if (!meal) throw new Error("Meal not found");
                 
                 const imageUrl = meal.image.replace('/preview', ''); // Clean up placeholder URL
-                const userStore = userProfile?.storePreference || 'woolworths';
+                const userStore = userProfileData?.storePreference || 'woolworths';
                 const getStoreUrl = STORE_SEARCH_URLS[userStore];
 
                 const ingredientListHTML = (meal.ingredients || []).map(ingredient => {
@@ -533,7 +573,7 @@
                     <div class="relative p-6 md:p-8">
                         <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl" onclick="closeModal('recipe-modal')">&times;</button>
                         <img src="${imageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/94A3B8/ffffff?text=Meal';" alt="${meal.name}" class="w-full h-48 object-cover rounded-lg mb-4">
-                        <h2 class="text-3xl font-bold mb-4">${meal.name}</h2>
+                        <h3 class="text-3xl font-bold mb-4">${meal.name}</h3>
                         <h3 class="text-xl font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">Nutritional Information (Approx.)</h3>
                         <div class="grid grid-cols-2 gap-2 text-sm">
                            <p><b>Calories:</b> ${meal.calories} kcal</p><p><b>Protein:</b> ${meal.protein} g</p>
@@ -577,11 +617,6 @@
         };
 
         const saveProfile = async () => {
-            if (!isAuthReady || !db) {
-                showToast("Application not ready. Please wait for initialization.", "error");
-                return;
-            }
-
             const profileData = {
                 age: parseInt(formInputs.age.value),
                 sex: formInputs.sex.value,
@@ -590,17 +625,32 @@
                 activity: parseFloat(formInputs.activity.value),
                 goal: formInputs.goal.value,
                 macros: formInputs.macros.value,
-                storePreference: formInputs.storePreference.value, // <-- SAVE NEW FIELD
+                storePreference: formInputs.storePreference.value,
                 vegetarian: formInputs.vegetarian.checked,
                 vegan: formInputs.vegan.checked
             };
             
             if(profileData.vegan) profileData.vegetarian = true; // Vegan is also vegetarian
             
+            userProfileData = profileData;
+
+            if (!isPersistentMode) {
+                // LOCAL MODE: Save to local variable only
+                updateUIForProfile(true);
+                closeModal('profile-modal');
+                showToast("Profile saved locally (data will not persist on refresh).", "success");
+                return;
+            }
+
+            // PERSISTENT MODE: Save to Firestore
+            if (!isAuthReady || !db) {
+                showToast("Cannot save profile. Database connection is not ready.", "error");
+                return;
+            }
+            
             try {
                 const docRef = getProfileDocRef();
                 await setDoc(docRef, profileData);
-                userProfile = profileData;
                 updateUIForProfile(true);
                 closeModal('profile-modal');
                 showToast("Profile saved successfully to Firestore!", "success");
@@ -611,17 +661,24 @@
         };
 
         const loadProfile = async () => {
-            if (!isAuthReady || !db) return; 
+            if (!isAuthReady) return;
 
+            if (!isPersistentMode) {
+                // LOCAL MODE: No loading needed, userProfileData starts as null
+                updateUIForProfile(true);
+                return;
+            } 
+
+            // PERSISTENT MODE: Load from Firestore
             try {
                 const docRef = getProfileDocRef();
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
-                    userProfile = docSnap.data();
+                    userProfileData = docSnap.data();
                     showToast("Profile loaded from Firestore.", "info");
                 } else {
-                    userProfile = null;
+                    userProfileData = null;
                     showToast("No saved profile found. Please enter your details.", "info");
                 }
                 
@@ -630,35 +687,43 @@
             } catch (e) {
                 console.error("Error loading profile from Firestore: ", e);
                 showToast("Error loading profile. Starting with default settings.", "error");
-                updateUIForProfile(true); // Still update UI even on load failure
+                updateUIForProfile(true); 
             }
         };
 
         const updateUIForProfile = (isReady) => {
-            placeholderText.textContent = isReady ? 'Please complete your profile to generate a personalized meal plan.' : 'Loading user profile...';
+            placeholderText.textContent = 'Loading user profile...';
+            generateBtn.disabled = true;
             
-            if (userProfile) {
+            if (!isReady) return;
+
+            if (userProfileData) {
                 // Populate form fields with loaded data
                 Object.keys(formInputs).forEach(key => {
                     if (formInputs[key].type === 'checkbox') {
-                        formInputs[key].checked = userProfile[key] || false;
-                    } else if (userProfile[key] !== undefined) {
-                        formInputs[key].value = userProfile[key];
+                        formInputs[key].checked = userProfileData[key] || false;
+                    } else if (userProfileData[key] !== undefined) {
+                        formInputs[key].value = userProfileData[key];
                     }
                 });
 
-                const goalText = userProfile.goal.charAt(0).toUpperCase() + userProfile.goal.slice(1);
-                subtitle.textContent = `Goal: ${goalText} | User ID: ${userId.slice(0, 4)}...`;
+                const goalText = userProfileData.goal.charAt(0).toUpperCase() + userProfileData.goal.slice(1);
+                
+                if (isPersistentMode) {
+                   subtitle.textContent = `Goal: ${goalText} | User ID: ${userId.slice(0, 4)}...`;
+                } else {
+                   subtitle.textContent = `Goal: ${goalText} | Running in LOCAL (non-persistent) Mode`;
+                }
+
                 placeholderText.textContent = `Click the button below to generate your weekly meal plan!`;
                 generateBtn.disabled = false;
-            } else if (isReady) {
-                // Not loaded but ready to accept input
+            } else {
                 subtitle.textContent = 'Your data-driven meal plan';
                 placeholderText.textContent = 'Please complete your profile to generate a personalized meal plan.';
-                generateBtn.disabled = true;
-            } else {
-                // Not ready (initial state)
-                generateBtn.disabled = true;
+            }
+
+            if (!isPersistentMode) {
+                 placeholderText.textContent = placeholderText.textContent.replace('Please complete', 'Please complete (data will not be saved)');
             }
         };
         
